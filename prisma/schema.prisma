@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////
+// ENUMS
+//////////////////////////
+
+enum UserRole {
+  SUPER_OWNER
+  ADMIN_GUDANG
+  OWNER_PABRIK
+  DRIVER
+}
+
+enum LocationType {
+  GUDANG_PACKAGING
+  PABRIK
+  GUDANG_DISTRIBUSI
+}
+
+enum ItemType {
+  PACKAGING
+  FINISHED_GOOD
+}
+
+enum ShipmentStatus {
+  CREATED
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  RECEIVED
+}
+
+enum ProductUnitType {
+  SACHET
+  BOTOL
+  KARTON
+  PCS
+  RENTENG
+  DUS
+}
+
+enum BaseUnit {
+  SACHET
+  BOTOL
+  KARTON
+  PCS
+}
+
+//////////////////////////
+// USER 
+//////////////////////////
+model User {
+  id Int @id @default(autoincrement())
+
+  name     String
+  email    String @unique
+  password String
+
+  role UserRole
+
+  locationId Int?
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  driverShipments Shipment[] @relation("ShipmentDriver")
+
+  productions   Production[]
+  distributions Distribution[]
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////
+// LOCATION 
+//////////////////////////
+model Location {
+  id Int @id @default(autoincrement())
+
+  name String
+  type LocationType
+
+  users User[]
+
+  stocks Stock[]
+
+  outgoingShipments Shipment[] @relation("ShipmentFrom")
+  incomingShipments Shipment[] @relation("ShipmentTo")
+
+  outgoingMovements StockMovement[] @relation("MovementFrom")
+  incomingMovements StockMovement[] @relation("MovementTo")
+
+  productions   Production[]
+  distributions Distribution[]
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////
+// ITEM
+//////////////////////////
+model Item {
+  id Int @id @default(autoincrement())
+  sku  String @unique
+  name String
+  type ItemType
+  baseUnit BaseUnit
+
+  units ProductUnit[]
+  stocks Stock[]
+  shipmentItems ShipmentItem[]
+  stockMovements StockMovement[]
+  inbounds PackagingInbound[]
+  Production   Production[]
+  Distribution Distribution[]
+
+  productionMappings ProductPackaging[] @relation("Product")
+  packagingMappings  ProductPackaging[] @relation("Packaging")
+
+  createdAt    DateTime       @default(now())
+
+}
+
+//////////////////////////
+// PRODUCT PACKAGING
+//////////////////////////
+model ProductPackaging {
+  id Int @id @default(autoincrement())
+
+  productId   Int
+  packagingId Int
+
+  ratio Int @default(1)
+
+  product Item @relation("Product", fields: [productId], references: [id])
+
+  packaging Item @relation("Packaging", fields: [packagingId], references: [id])
+
+  @@unique([productId])
+}
+
+//////////////////////////
+// PRODUCT UNIT
+//////////////////////////
+model ProductUnit {
+  id Int @id @default(autoincrement())
+
+  productId Int
+
+  unitName ProductUnitType
+
+  multiplier Int
+
+  product Item @relation(fields: [productId], references: [id])
+
+  @@unique([productId, unitName])
+}
+
+//////////////////////////
+// STOCK (SNAPSHOT)
+//////////////////////////
+model Stock {
+  id Int @id @default(autoincrement())
+
+  itemId     Int
+  locationId Int
+
+  qty Int @default(0)
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@unique([itemId, locationId])
+}
+
+//////////////////////////
+// STOCK MOVEMENT (LOG)
+//////////////////////////
+model StockMovement {
+  id Int @id @default(autoincrement())
+
+  itemId Int
+
+  fromLocationId Int?
+  toLocationId   Int?
+
+  qty Int
+
+  type String
+
+  referenceNo String?
+
+  shipmentId Int?
+
+  createdAt DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  fromLocation Location? @relation("MovementFrom", fields: [fromLocationId], references: [id])
+
+  toLocation Location? @relation("MovementTo", fields: [toLocationId], references: [id])
+
+  shipment Shipment? @relation(fields: [shipmentId], references: [id])
+}
+
+//////////////////////////
+// PACKAGING INBOUND
+//////////////////////////
+model PackagingInbound {
+  id Int @id @default(autoincrement())
+
+  vendorName String
+
+  itemId Int
+
+  qty Int
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id])
+}
+
+//////////////////////////
+// SHIPMENT
+//////////////////////////
+model Shipment {
+  id Int @id @default(autoincrement())
+
+  fromLocationId Int
+  toLocationId   Int
+
+  driverId Int?
+
+  status ShipmentStatus @default(CREATED)
+
+  createdAt DateTime @default(now())
+
+  fromLocation Location @relation("ShipmentFrom", fields: [fromLocationId], references: [id])
+
+  toLocation Location @relation("ShipmentTo", fields: [toLocationId], references: [id])
+
+  driver User? @relation("ShipmentDriver", fields: [driverId], references: [id])
+
+  items ShipmentItem[]
+
+  stockMovements StockMovement[]
+}
+
+//////////////////////////
+// SHIPMENT ITEM
+//////////////////////////
+model ShipmentItem {
+  id Int @id @default(autoincrement())
+
+  shipmentId Int
+
+  itemId Int
+
+  qty Int
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  item Item @relation(fields: [itemId], references: [id])
+}
+
+//////////////////////////
+// PRODUCTION
+//////////////////////////
+model Production {
+  id Int @id @default(autoincrement())
+
+  locationId Int
+
+  productId Int
+
+  qtyGood Int
+
+  qtyReject Int @default(0)
+
+  notes String?
+
+  createdById Int
+
+  createdAt DateTime @default(now())
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  product Item @relation(fields: [productId], references: [id])
+
+  createdBy User @relation(fields: [createdById], references: [id])
+}
+
+//////////////////////////
+// DISTRIBUTION
+//////////////////////////
+model Distribution {
+  id Int @id @default(autoincrement())
+
+  locationId Int
+
+  productId Int
+
+  qty Int
+
+  buyerName String?
+
+  notes String?
+
+  createdById Int
+
+  createdAt DateTime @default(now())
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  product Item @relation(fields: [productId], references: [id])
+
+  createdBy User @relation(fields: [createdById], references: [id])
+}

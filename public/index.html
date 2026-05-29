@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Sasana Warehouse Dashboard</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      h1 {
+        color: #333;
+      }
+      .card {
+        background: white;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📦 Sasana Warehouse Dashboard</h1>
+
+    <div class="card">
+      <h2>📊 Stock</h2>
+      <table id="stockTable"></table>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Movements</h2>
+      <table id="movementTable"></table>
+    </div>
+
+    <div class="card">
+      <h2>🏭 Production</h2>
+      <table id="productionTable"></table>
+    </div>
+
+    <script>
+      const API = 'http://localhost:3000';
+
+      async function loadStocks() {
+        const res = await fetch(API + '/report/stocks');
+        const data = await res.json();
+
+        let html = '<tr><th>Item</th><th>Location</th><th>Qty</th></tr>';
+
+        data.forEach((s) => {
+          html += `
+      <tr>
+        <td>${s.item.name}</td>
+        <td>${s.location.name}</td>
+        <td>${s.qty}</td>
+      </tr>
+    `;
+        });
+
+        document.getElementById('stockTable').innerHTML = html;
+      }
+
+      async function loadMovements() {
+        const res = await fetch(API + '/report/movements');
+        const data = await res.json();
+
+        let html =
+          '<tr><th>Item</th><th>From</th><th>To</th><th>Qty</th><th>Type</th></tr>';
+
+        data.forEach((m) => {
+          html += `
+      <tr>
+        <td>${m.itemId}</td>
+        <td>${m.fromLocationId || '-'}</td>
+        <td>${m.toLocationId || '-'}</td>
+        <td>${m.qty}</td>
+        <td>${m.type}</td>
+      </tr>
+    `;
+        });
+
+        document.getElementById('movementTable').innerHTML = html;
+      }
+
+      async function loadProduction() {
+        const res = await fetch(API + '/report/production');
+        const data = await res.json();
+
+        let html = '<tr><th>Item ID</th><th>Total Produced</th></tr>';
+
+        data.forEach((p) => {
+          html += `
+      <tr>
+        <td>${p.itemId}</td>
+        <td>${p._sum.qty}</td>
+      </tr>
+    `;
+        });
+
+        document.getElementById('productionTable').innerHTML = html;
+      }
+
+      loadStocks();
+      loadMovements();
+      loadProduction();
+    </script>
+  </body>
+</html>
