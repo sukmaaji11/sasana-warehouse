@@ -3,42 +3,6 @@ import prisma from '../../config/prisma.js';
 const startOfDay = new Date();
 startOfDay.setHours(0, 0, 0, 0);
 
-const finishedGoodStocks = await prisma.stock.findMany({
-  where: {
-    locationId,
-
-    item: {
-      type: 'FINISHED_GOOD',
-    },
-  },
-
-  include: {
-    item: true,
-  },
-
-  orderBy: {
-    qty: 'asc',
-  },
-});
-
-const packagingStocks = await prisma.stock.findMany({
-  where: {
-    locationId,
-
-    item: {
-      type: 'PACKAGING',
-    },
-  },
-
-  include: {
-    item: true,
-  },
-
-  orderBy: {
-    qty: 'asc',
-  },
-});
-
 const getLowPackagingStocks = async () => {
   return prisma.stock.findMany({
     where: {
@@ -147,6 +111,9 @@ const getSuperOwnerDashboard = async () => {
     }),
   ]);
 
+  const lowPackagingStocks = await getLowPackagingStocks();
+  const productionByFactory = await getProductionByFactory(startOfDay);
+  const distributionByFactory = await getDistributionByFactory(startOfDay);
   return {
     role: 'SUPER_OWNER',
 
@@ -241,7 +208,41 @@ const getOwnerPabrikDashboard = async (locationId) => {
       },
     },
   });
+  const finishedGoodStocks = await prisma.stock.findMany({
+    where: {
+      locationId,
 
+      item: {
+        type: 'FINISHED_GOOD',
+      },
+    },
+
+    include: {
+      item: true,
+    },
+
+    orderBy: {
+      qty: 'asc',
+    },
+  });
+
+  const packagingStocks = await prisma.stock.findMany({
+    where: {
+      locationId,
+
+      item: {
+        type: 'PACKAGING',
+      },
+    },
+
+    include: {
+      item: true,
+    },
+
+    orderBy: {
+      qty: 'asc',
+    },
+  });
   return {
     role: 'OWNER_PABRIK',
 
