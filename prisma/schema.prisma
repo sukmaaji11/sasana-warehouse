@@ -46,6 +46,15 @@ enum ProductUnitType {
   DUS
 }
 
+enum StockMovementType {
+  INBOUND
+  SHIPMENT_OUT
+  SHIPMENT_IN
+  PRODUCTION_CONSUME
+  PRODUCTION_RESULT
+  DISTRIBUTION
+}
+
 enum BaseUnit {
   SACHET
   BOTOL
@@ -192,7 +201,7 @@ model StockMovement {
 
   qty Int
 
-  type String
+  type StockMovementType
 
   referenceNo String?
 
