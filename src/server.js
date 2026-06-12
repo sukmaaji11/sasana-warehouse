@@ -12,6 +12,8 @@ import shipmentRoutes from './modules/shipment/shipment.routes.js';
 import productionRoutes from './modules/production/production.routes.js';
 import distributionRoutes from './modules/distribution/distribution.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
+import locationRoutes from './modules/location/location.routes.js';
+import userRoutes from './modules/user/user.routes.js';
 //import prisma from '../src/config/prisma.js';
 
 dotenv.config();
@@ -43,6 +45,8 @@ app.use('/shipments', shipmentRoutes);
 app.use('/productions', productionRoutes);
 app.use('/distributions', distributionRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/locations', locationRoutes);
+app.use('/users', userRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
